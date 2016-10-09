@@ -2,8 +2,8 @@
 {
     public class Solution
     {
-        public bool Solved { get; private set; }
+        public bool Solved { get; set; }
 
-        public Square Square { get; private set; }
+        public Square Square { get; set; }
     }
 }
