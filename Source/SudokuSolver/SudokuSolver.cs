@@ -8,5 +8,15 @@
         {
             _squareSize = squareSize;
         }
+
+        public Solution Solve(Square problem)
+        {
+            
+        }
+
+        public override string ToString()
+        {
+            return "SudokuSolver (squareSize=" + _squareSize + ")";
+        }
     }
 }
