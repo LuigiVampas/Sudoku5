@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.Z3;
 
 namespace SudokuSolver
@@ -7,6 +8,9 @@ namespace SudokuSolver
     {
         private Context _context;
         private BoolExpr _solution;
+        private IntExpr[,] _variables;
+        private uint _bigSquareSize;
+        private uint _smallSquareSize;
 
         public SudokuSolver()
         {
@@ -15,19 +19,28 @@ namespace SudokuSolver
 
         public Solution Solve(Square problem)
         {
-            var givenData = Parse(problem);
-
+            InitializeSquareSizes(problem);
             InitializeSolution();
 
-            var bigSquareSize = problem.SquareSize * problem.SquareSize;
+            var givenData = Parse(problem);
+            InitializeVariables(givenData);
 
-            var intVariables = InitializeVariables(givenData, bigSquareSize);
+            AddRowRules();
+            AddColumnRules();
+            AddSquareRules();
 
-            AddRowRules(intVariables, bigSquareSize);
-            AddColumnRules(intVariables, bigSquareSize);
-            AddSquareRules(intVariables, problem.SquareSize);
+            return FormSolution();
+        }
 
-            return new Solution();
+        private void InitializeSquareSizes(Square problem)
+        {
+            _smallSquareSize = problem.SquareSize;
+            _bigSquareSize = _smallSquareSize * _smallSquareSize;
+        }
+        
+        private void InitializeSolution()
+        {
+            _solution = _context.MkTrue();
         }
 
         private Dictionary<Coordinate, int> Parse(Square problem)
@@ -44,29 +57,22 @@ namespace SudokuSolver
             return result;
         }
 
-        private IntExpr[,] InitializeVariables(Dictionary<Coordinate, int> givenData, uint bigSquareSize)
+        private void InitializeVariables(Dictionary<Coordinate, int> givenData)
         {
-            var intVariables = new IntExpr[bigSquareSize, bigSquareSize];
+            _variables = new IntExpr[_bigSquareSize, _bigSquareSize];
 
-            for (uint x = 0; x < bigSquareSize; ++x)
-                for (uint y = 0; y < bigSquareSize; ++y)
+            for (uint x = 0; x < _bigSquareSize; ++x)
+                for (uint y = 0; y < _bigSquareSize; ++y)
                 {
-                    var variable = AddIntVariable(x + " " + y, bigSquareSize);
+                    var variable = AddIntVariable(x + " " + y);
 
                     var coordinate = new Coordinate { X = x, Y = y };
 
                     if (givenData.ContainsKey(coordinate))
                         AddValue(variable, givenData[coordinate]);
 
-                    intVariables[x,y] = variable;
+                    _variables[x, y] = variable;
                 }
-
-            return intVariables;
-        }
-
-        private void InitializeSolution()
-        {
-            _solution = _context.MkTrue();
         }
 
         private void AddValue(IntExpr variable, int value)
@@ -76,11 +82,11 @@ namespace SudokuSolver
             AddRule(_context.MkEq(variable, newValueExpr));
         }
 
-        private IntExpr AddIntVariable(string name, uint bigSqaureSize)
+        private IntExpr AddIntVariable(string name)
         {
             var intConst = _context.MkIntConst(name);
 
-            AddRule(CreateIntervalFor(intConst, 1, bigSqaureSize));
+            AddRule(CreateIntervalFor(intConst, 1, _bigSquareSize));
 
             return intConst;
         }
@@ -96,41 +102,54 @@ namespace SudokuSolver
             return _context.MkAnd(leExpr, geExpr);
         }
 
-        private void AddRowRules(IntExpr[,] variables, uint bigSquareSize)
+        private void AddRowRules()
         {
-            for (var rowNumber = 0; rowNumber < bigSquareSize; ++rowNumber)
-                AddElementNonEqualityRuleForRow(variables, rowNumber, bigSquareSize);
+            for (var rowNumber = 0; rowNumber < _bigSquareSize; ++rowNumber)
+                AddElementNonEqualityRuleForRow(rowNumber);
         }
 
-        private void AddElementNonEqualityRuleForRow(IntExpr[,] variables, int rowNumber, uint bigSquareSize)
+        private void AddElementNonEqualityRuleForRow(int rowNumber)
         {
-            var elements = new IntExpr[bigSquareSize];
+            var elements = new IntExpr[_bigSquareSize];
 
-            for (var elementIndex = 0; elementIndex < bigSquareSize; ++elementIndex)
-                elements[elementIndex] = variables[rowNumber, elementIndex];
+            for (var elementIndex = 0; elementIndex < _bigSquareSize; ++elementIndex)
+                elements[elementIndex] = _variables[rowNumber, elementIndex];
 
             AddNonEqualityRule(elements);
         }
 
-        private void AddColumnRules(IntExpr[,] variables, uint bigSquareSize)
+        private void AddColumnRules()
         {
-            for (var columnNumber = 0; columnNumber < bigSquareSize; ++columnNumber)
-                AddElementNonEqualityRuleForColumn(variables, columnNumber, bigSquareSize);
+            for (var columnNumber = 0; columnNumber < _bigSquareSize; ++columnNumber)
+                AddElementNonEqualityRuleForColumn(columnNumber);
         }
 
-        private void AddElementNonEqualityRuleForColumn(IntExpr[,] variables, int columnNumber, uint bigSquareSize)
+        private void AddElementNonEqualityRuleForColumn(int columnNumber)
         {
-            var elements = new IntExpr[bigSquareSize];
+            var elements = new IntExpr[_bigSquareSize];
 
-            for (var elementIndex = 0; elementIndex < bigSquareSize; ++elementIndex)
-                elements[elementIndex] = variables[elementIndex, columnNumber];
+            for (var elementIndex = 0; elementIndex < _bigSquareSize; ++elementIndex)
+                elements[elementIndex] = _variables[elementIndex, columnNumber];
 
             AddNonEqualityRule(elements);
         }
 
-        private void AddSquareRules(IntExpr[,] variables, uint squareSize)
+        private void AddSquareRules()
         {
-            
+            for (var squareX = 0; squareX < _smallSquareSize; ++squareX)
+                for (var squareY = 0; squareY < _smallSquareSize; ++squareY)
+                    AddElementNonEqualityRuleForSquare(squareX, squareY);
+        }
+
+        private void AddElementNonEqualityRuleForSquare(int squareX, int squareY)
+        {
+            var elements = new IntExpr[_bigSquareSize];
+
+            for (var x = 0; x < _smallSquareSize; ++x)
+                for (var y = 0; y < _smallSquareSize; ++y)
+                    elements[x * _smallSquareSize + y] = _variables[squareX * _smallSquareSize + x, squareY * _smallSquareSize + y];
+
+            AddNonEqualityRule(elements);
         }
 
         private void AddNonEqualityRule(IntExpr[] variables)
@@ -150,6 +169,32 @@ namespace SudokuSolver
         private void AddRule(BoolExpr rule)
         {
             _solution = _context.MkAnd(_solution, rule);
+        }
+
+        private Solution FormSolution()
+        {
+            var solution = new Solution();
+
+            var solver = _context.MkSolver("QF_LIA");
+
+            solver.Assert(_solution);
+
+            if (solver.Check() == Status.SATISFIABLE)
+            {
+                solution.Solved = true;
+
+                solution.Square = CreateSolution();
+            }
+
+            solution.Solved = false;
+            solution.Square = null;
+
+            return solution;
+        }
+
+        private Square CreateSolution()
+        {
+            
         }
 
         public override string ToString()
