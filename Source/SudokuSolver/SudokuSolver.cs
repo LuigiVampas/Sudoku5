@@ -114,7 +114,18 @@ namespace SudokuSolver
 
         private void AddColumnRules(IntExpr[,] variables, uint bigSquareSize)
         {
-            
+            for (var columnNumber = 0; columnNumber < bigSquareSize; ++columnNumber)
+                AddElementNonEqualityRuleForColumn(variables, columnNumber, bigSquareSize);
+        }
+
+        private void AddElementNonEqualityRuleForColumn(IntExpr[,] variables, int columnNumber, uint bigSquareSize)
+        {
+            var elements = new IntExpr[bigSquareSize];
+
+            for (var elementIndex = 0; elementIndex < bigSquareSize; ++elementIndex)
+                elements[elementIndex] = variables[elementIndex, columnNumber];
+
+            AddNonEqualityRule(elements);
         }
 
         private void AddSquareRules(IntExpr[,] variables, uint squareSize)
