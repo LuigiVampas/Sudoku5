@@ -98,7 +98,18 @@ namespace SudokuSolver
 
         private void AddRowRules(IntExpr[,] variables, uint bigSquareSize)
         {
-            
+            for (var rowNumber = 0; rowNumber < bigSquareSize; ++rowNumber)
+                AddElementNonEqualityRuleForRow(variables, rowNumber, bigSquareSize);
+        }
+
+        private void AddElementNonEqualityRuleForRow(IntExpr[,] variables, int rowNumber, uint bigSquareSize)
+        {
+            var elements = new IntExpr[bigSquareSize];
+
+            for (var elementIndex = 0; elementIndex < bigSquareSize; ++elementIndex)
+                elements[elementIndex] = variables[rowNumber, elementIndex];
+
+            AddNonEqualityRule(elements);
         }
 
         private void AddColumnRules(IntExpr[,] variables, uint bigSquareSize)
@@ -109,6 +120,20 @@ namespace SudokuSolver
         private void AddSquareRules(IntExpr[,] variables, uint squareSize)
         {
             
+        }
+
+        private void AddNonEqualityRule(IntExpr[] variables)
+        {
+            for (var firstVariableIndex = 0; firstVariableIndex < variables.Length; ++firstVariableIndex)
+                for (var secondVariableIndex = firstVariableIndex + 1;
+                    secondVariableIndex < variables.Length;
+                    ++secondVariableIndex)
+                {
+                    var firstVariable = variables[firstVariableIndex];
+                    var secondVariable = variables[secondVariableIndex];
+
+                    AddRule(_context.MkNot(_context.MkEq(firstVariable, secondVariable)));
+                }
         }
 
         private void AddRule(BoolExpr rule)
