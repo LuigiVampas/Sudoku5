@@ -10,7 +10,7 @@ namespace SudokuSolver.Tests
         [SetUp]
         public void SetUp()
         {
-            _solver = new SudokuSolver(3);
+            _solver = new SudokuSolver();
         }
 
         [Test]
@@ -18,7 +18,7 @@ namespace SudokuSolver.Tests
         {
             _solver.ToString();
 
-            Assert.That(_solver.ToString(), Is.EqualTo("SudokuSolver (squareSize=3)"));
+            Assert.That(_solver.ToString(), Is.EqualTo("[SudokuSolver]"));
         }
     }
 }
