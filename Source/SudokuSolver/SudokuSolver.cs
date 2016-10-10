@@ -47,8 +47,8 @@ namespace SudokuSolver
         {
             var result = new Dictionary<Coordinate, int>();
 
-            for (uint x = 0; x < problem.SquareSize; ++x)
-                for (uint y = 0; y < problem.SquareSize; ++y)
+            for (uint x = 0; x < _bigSquareSize; ++x)
+                for (uint y = 0; y < _bigSquareSize; ++y)
                 {
                     if (problem.Structure[x, y] >= 0)
                         result[new Coordinate { X = x, Y = y }] = problem.Structure[x, y];
@@ -97,7 +97,7 @@ namespace SudokuSolver
             var maxConst = _context.MkInt(max);
 
             var leExpr = _context.MkLe(intConst, maxConst);
-            var geExpr = _context.MkGe(minConst, intConst);
+            var geExpr = _context.MkGe(intConst, minConst);
 
             return _context.MkAnd(leExpr, geExpr);
         }
@@ -183,7 +183,9 @@ namespace SudokuSolver
             {
                 solution.Solved = true;
 
-                solution.Square = CreateSolution();
+                solution.Square = CreateSolution(solver);
+
+                return solution;
             }
 
             solution.Solved = false;
@@ -192,9 +194,17 @@ namespace SudokuSolver
             return solution;
         }
 
-        private Square CreateSolution()
+        private Square CreateSolution(Solver solver)
         {
-            
+            var result = new Square(_smallSquareSize);
+
+            for (var x = 0; x < _bigSquareSize; ++x)
+                for (var y = 0; y < +_bigSquareSize; ++y)
+                {
+                    result.Structure[x, y] = Convert.ToInt32(solver.Model.ConstInterp(_variables[x, y]).ToString());
+                }
+
+            return result;
         }
 
         public override string ToString()
