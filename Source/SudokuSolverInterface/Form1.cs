@@ -122,9 +122,9 @@ namespace SudokuSolverInterface
                 var result = solver.Solve(problem);
                 MessageBox.Show(result != null && result.Solved ? result.Square.ToString() : "Not solved");
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                MessageBox.Show("Необработанное исключение");
+                MessageBox.Show("Необработанное исключение: " + exception.Message);
             }
         }
     }
