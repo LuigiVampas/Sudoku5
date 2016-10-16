@@ -53,8 +53,8 @@ namespace SudokuSolverInterface
 
         private void create_field_Click(object sender, EventArgs e)
         {
-            var size = GetSize();
             SetSettings();
+            var size = GetSize();
             CreateRowsAndColumnsInGrid(size * size);
             MakeGridNotSortable();
             MakeCellsASquare();
@@ -100,27 +100,59 @@ namespace SudokuSolverInterface
             return 0;
         }
 
+        private void FillGrid(Solution result)
+        {
+            for (var i = 0; i < dataGridView1.RowCount; ++i)
+            {
+                for (var j = 0; j < dataGridView1.ColumnCount; ++j)
+                {
+                    dataGridView1.Rows[i].Cells[j].Value = result.Square.Structure[i, j];
+                }
+            }
+        }
+
+        private Square FillProblem(Square problem, uint size)
+        {
+            for (var i = 0; i < dataGridView1.RowCount; i++)
+            {
+                for (var j = 0; j < dataGridView1.ColumnCount; ++j)
+                {
+                    if (dataGridView1.Rows[i].Cells[j].Value == null)
+                        continue;
+                    var value = Convert.ToInt32(dataGridView1.Rows[i].Cells[j].Value);
+
+                    if (value < size * size && value > 0)
+                        problem.Structure[i, j] = value;
+                    else
+                    {
+                        SetSettings();
+                        throw new ArgumentException("\nНеверный формат значения: ",
+                            "Ячейка: " + i.ToString() + " " + j.ToString() + " " +
+                            "\nЗначение: " + dataGridView1.Rows[i].Cells[j].Value.ToString());
+                    }
+                }
+            }
+
+            return problem;
+        }
+
         private void _solve_Click(object sender, EventArgs e)
         {
             try
             {
                 var size = GetSize();
                 textBox1.Clear();
-                SetSettings();
                 var solver = new SudokuSolver.SudokuSolver();
                 var problem = new Square(size);
-                for (int i = 0; i < dataGridView1.RowCount; i++)
-                {
-                    for (int j = 0; j < dataGridView1.ColumnCount; ++j)
-                    {
-                        if ((uint)(dataGridView1.Rows[i].Cells[j].Value) < size*size &&
-                            (uint)(dataGridView1.Rows[i].Cells[j].Value) > 0)
-                            problem.Structure[i, j] = (int)(dataGridView1.Rows[i].Cells[j].Value);
-                    }
-                }
-
+                problem = FillProblem(problem, size);
+ 
                 var result = solver.Solve(problem);
-                MessageBox.Show(result != null && result.Solved ? result.Square.ToString() : "Not solved");
+                if (result.Solved)
+                    FillGrid(result);
+                else
+                {
+                    MessageBox.Show("Not solved!!");
+                }
             }
             catch (Exception exception)
             {
