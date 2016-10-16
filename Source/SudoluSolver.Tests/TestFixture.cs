@@ -27,7 +27,6 @@ namespace SudokuSolver.Tests
         {
             var solver = new SudokuSolver();
 
-            problem.Structure[8, 7] = 6;
             var problem = new Square(3)
             {
                 Structure =
@@ -51,6 +50,7 @@ namespace SudokuSolver.Tests
                     [6, 3] = 3,
                     [7, 0] = 5,
                     [7, 8] = 8,
+                    [8, 7] = 6,
                     [8, 1] = 8,
                     [8, 4] = 2,
                     [8, 5] = 9,
